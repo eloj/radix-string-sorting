@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <assert.h>
 
 #define SWAP(a, b) do { __auto_type T = (a); a = b; b = T; } while (0)
 
@@ -21,13 +22,14 @@ struct sortrec const source_arr[] = {
 	{ 0, "" },
 	{ 2, "abracadabrakusinvitamin" },
 	{ 45, "klopper" },
-	{ 255, "forever" },
+	{ 255, "" },
 	{ 1, "klopper!aksjdkasjdk" },
 };
 
 static const char** radix_sort_CE0(const char** RESTRICT S, const char** RESTRICT T, size_t n, int h) {
 	size_t c[256] = { 0 };
-	size_t b[256];
+	size_t b[256] = { 0 };
+	size_t y[256] = { 0 };
 
 	// printf("Sorting %zu entries, prefix len %d -- S @ %p, T @ %p\n", n, h, S, T);
 	// TODO: return if n < 2?
@@ -36,12 +38,21 @@ static const char** radix_sort_CE0(const char** RESTRICT S, const char** RESTRIC
 	for (size_t i = 0 ; i < n ; ++i) {
 		// printf(">'%s' <- %d from %s'\n", S[i] + h, h, S[i]);
 		++c[(uint8_t)(S[i][h])];
+		++y[(uint8_t)(S[i][h])];
 	}
 
 	// Generate prefix sums
 	b[0] = 0;
 	for (size_t i = 1 ; i < 256 ; ++i) {
 		b[i] = b[i-1] + c[i-1];
+	}
+	size_t x = 0;
+	for (size_t i = 0 ; i < 256 ; ++i) {
+		size_t a = y[i];
+		y[i] = x;
+		x += a;
+		printf("b[%zu]=%zu, y:=%zu\n", i, b[i], y[i]);
+		assert(b[i] == y[i]);
 	}
 
 	// Sort
@@ -52,14 +63,18 @@ static const char** radix_sort_CE0(const char** RESTRICT S, const char** RESTRIC
 	}
 	memcpy(S, T, n * sizeof(const char*));
 
+	assert(c[0] == b[1]);
+
 	// Recursively sort buckets with more than one suffixes left.
-	size_t x = c[0];
+	x = b[1]; // These are the zero-terminators, which we skip.
 	for (size_t i = 1 ; i < 256 ; ++i) {
-		if (c[i] > 1) {
-			printf("recurse S+%zu, n=%zu, h=%d\n", x, c[i], h+1);
-			radix_sort_CE0(S+x, T+x, c[i], h+1);
+		size_t ci = b[i] - b[i-1];
+		assert(c[i] == ci);
+		if (ci > 1) {
+			printf("recurse S+%zu, n=%zu, h=%d\n", x, ci, h+1);
+			radix_sort_CE0(S+x, T, ci, h+1);
 		}
-		x += c[i];
+		x += ci;
 	}
 
 	return S;
