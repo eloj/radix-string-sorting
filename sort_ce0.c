@@ -49,40 +49,80 @@ static const char** radix_sort_CE0(const char** RESTRICT S, const char** RESTRIC
 }
 #endif
 
-// TODO: Eventually there will be very few of the 256 buckets used; eval bitmap iteration for -256- loops
-static const char** radix_sort_CE0_CB(const char** RESTRICT S, const char** RESTRICT T, size_t n, int h) {
+static size_t calls = 0;
+static size_t iters = 0;
+static size_t wasted_iters = 0;
+static size_t bucket_use[256] = { 0 };
+
+static const char** radix_sort_CE0_CB_BM1(const char** RESTRICT S, const char** RESTRICT T, size_t n, int h) {
+	uint64_t buse[4] = { 0 };
+	uint64_t cuse[4] = { 0 }; // TODO: Could overwrite buse during prefix sum iteration (after k loop)
+	uint8_t bones[256] = { 0 };
 	size_t cb[256] = { 0 };
+
+	++calls;
 
 	// Generate histogram/character counts
 	for (size_t i = 0 ; i < n ; ++i) {
-		++cb[(uint8_t)(S[i][h])];
+		uint8_t idx = S[i][h];
+		++cb[idx];
+		buse[idx >> 6] |= (1UL << (idx & 63));
 	}
 
 	size_t x = 0;
-	for (size_t i = 0 ; i < 256 ; ++i) {
-		size_t a = cb[i];
-		cb[i] = x;
-		x += a;
+	uint8_t ones_skipped = 0;
+	for (int k = 0 ; k < 4 ; ++k) {
+		uint64_t bitset = buse[k];
+		while (bitset != 0) {
+			size_t i = __builtin_ctzl(bitset) + (k * 64);
+
+			size_t a = cb[i];
+			cb[i] = x;
+			x += a;
+
+			if (a > 1) {
+				cuse[i >> 6] |= (1UL << (i & 63));
+				bones[i] = ones_skipped;
+				ones_skipped = 0;
+			} else if (a == 1 && i > 0) {
+				++ones_skipped;
+			}
+
+			bitset ^= (bitset & -bitset);
+		}
 	}
 
 	// Sort
 	for (size_t i = 0 ; i < n ; ++i) {
 		uint8_t idx = S[i][h];
-		T[cb[idx]] = S[i];
-		++cb[idx];
+		// assert((buse[idx >> 6] & (1UL << (idx & 63))) != 0);
+		T[cb[idx]++] = S[i];
 	}
 	memcpy(S, T, n * sizeof(*S));
 
 	// Recursively sort buckets with more than one suffixes left.
-	x = cb[1]; // These are the zero-terminators, which we skip.
-	for (size_t i = 1 ; i < 256 ; ++i) {
-		size_t ci = cb[i] - cb[i-1];
-		if (ci > 1) {
-			// printf("recurse S+%zu, n=%zu, h=%d\n", x, ci, h+1);
-			// We could call different sorts here, e.g for small n.
-			radix_sort_CE0_CB(S+x, T, ci, h+1);
+	x = cb[0]; // This should be the count of '\0' in input.
+	cuse[0] &= ~1UL;
+	for (int k = 0 ; k < 4 ; ++k) {
+		uint64_t bitset = cuse[k];
+		while (bitset != 0) {
+			size_t i = __builtin_ctzl(bitset) + (k * 64);
+
+			assert(i > 0);
+			assert(cb[i] >= x);
+			++bucket_use[i];
+			++iters;
+
+			// The count needs to be adjusted by 1 for every one-suffix iteration we've skipped over.
+			x += bones[i];
+			size_t ci = (cb[i] - x);
+
+			assert(ci > 1);
+			radix_sort_CE0_CB_BM1(S+x, T, ci, h+1);
+			x = cb[i];
+
+			bitset ^= bitset & -bitset;
 		}
-		x += ci;
 	}
 
 	return S;
@@ -170,17 +210,30 @@ int main(int argc, char *argv[]) {
 	}
 
 	const char** aux = malloc(entries * sizeof(const char*));
-	printf("%zu strings sort.\n", entries);
 
-	const char **res = radix_sort_CE0_CB(src, aux, entries, 0);
+	const char **res = radix_sort_CE0_CB_BM1(src, aux, entries, 0);
 
-	for (size_t i = 0 ; i < 10 ; ++i) {
-		printf("%s\n", res[i]);
+	int used = 0;
+	for (size_t i = 0 ; i < 256 ; ++i) {
+		if (bucket_use[i] > 0) {
+#if BUCKETUSE__
+			printf("bucket_use[%zu]=%zu\n", i, bucket_use[i]);
+#endif
+			++used;
+		}
+	}
+	printf("Buckets used %d, unused %d. %zu calls, %zu iterations (%zu wasted)\n", used, 256-used, calls, iters, wasted_iters);
+
+#if VERIFY
+	for (size_t i = 0 ; i < entries ; ++i) {
+		if (i < 10)
+			printf("%s\n", res[i]);
 	}
 
 	int ok = 1;
 	for (size_t i=1 ; i < entries ; ++i) {
 		if (strcmp(res[i-1], res[i]) > 0) {
+			printf("ERROR: res[%zu]='%s' > res[%zu]='%s'\n", i-1, res[i-1], i, res[i]);
 			ok = 0;
 			break;
 		}
@@ -190,6 +243,7 @@ int main(int argc, char *argv[]) {
 	} else {
 		printf("Sort FAILED.\n");
 	}
+#endif
 
 	free(aux);
 	free(src);
