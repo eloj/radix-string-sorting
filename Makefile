@@ -51,5 +51,8 @@ test: all
 
 sort_ce0: sort_ce0.c
 
+.c.o:
+	$(CC) $(CFLAGS) -c $< -o $@
+
 clean:
 	rm -f sort_ce0 vgcore.* core.* *.gcda
