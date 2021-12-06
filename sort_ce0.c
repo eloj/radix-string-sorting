@@ -13,8 +13,44 @@
 #define RESTRICT __restrict__
 #endif
 
-// TODO: Eventually there will be very few of the 256 buckets used; eval bitmap iteration for -256- loops
+#if 0
 static const char** radix_sort_CE0(const char** RESTRICT S, const char** RESTRICT T, size_t n, int h) {
+	size_t c[256] = { 0 };
+	size_t b[256];
+
+	// Generate histogram
+	for (size_t i = 0 ; i < n ; ++i) {
+		++c[(uint8_t)(S[i][h])];
+	}
+
+	// Generate prefix sums
+	b[0] = 0;
+	for (size_t i = 1 ; i < 256 ; ++i) {
+		b[i] = b[i-1] + c[i-1];
+	}
+
+	// Sort
+	for (size_t i = 0 ; i < n ; ++i) {
+		uint8_t idx = S[i][h];
+		T[b[idx]++] = S[i];
+	}
+	memcpy(S, T, n * sizeof(*S));
+
+	// Recursively sort buckets, skipping the first which contains strings already in order.
+	size_t x = c[0];
+	for (size_t i = 1 ; i < 256 ; ++i) {
+		if (c[i] > 1) {
+			radix_sort_CE0(S+x, T+x, c[i], h+1);
+		}
+		x += c[i];
+	}
+
+	return S;
+}
+#endif
+
+// TODO: Eventually there will be very few of the 256 buckets used; eval bitmap iteration for -256- loops
+static const char** radix_sort_CE0_CB(const char** RESTRICT S, const char** RESTRICT T, size_t n, int h) {
 	size_t cb[256] = { 0 };
 
 	// Generate histogram/character counts
@@ -44,7 +80,7 @@ static const char** radix_sort_CE0(const char** RESTRICT S, const char** RESTRIC
 		if (ci > 1) {
 			// printf("recurse S+%zu, n=%zu, h=%d\n", x, ci, h+1);
 			// We could call different sorts here, e.g for small n.
-			radix_sort_CE0(S+x, T, ci, h+1);
+			radix_sort_CE0_CB(S+x, T, ci, h+1);
 		}
 		x += ci;
 	}
@@ -136,7 +172,7 @@ int main(int argc, char *argv[]) {
 	const char** aux = malloc(entries * sizeof(const char*));
 	printf("%zu strings sort.\n", entries);
 
-	const char **res = radix_sort_CE0(src, aux, entries, 0);
+	const char **res = radix_sort_CE0_CB(src, aux, entries, 0);
 
 	for (size_t i = 0 ; i < 10 ; ++i) {
 		printf("%s\n", res[i]);
