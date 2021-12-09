@@ -6,6 +6,8 @@ static const char** radix_sort_CE0(const char** RESTRICT S, const char** RESTRIC
 	size_t c[256] = { 0 };
 	size_t b[256];
 
+	STAT_INC_CALLS;
+
 	// Generate histogram
 	for (size_t i = 0 ; i < n ; ++i) {
 		++c[(uint8_t)(S[i][h])];
@@ -28,8 +30,12 @@ static const char** radix_sort_CE0(const char** RESTRICT S, const char** RESTRIC
 	size_t x = c[0];
 	for (size_t i = 1 ; i < 256 ; ++i) {
 		if (c[i] > 1) {
+			STAT_INC_BUCKET(i);
 			radix_sort_CE0(S+x, T+x, c[i], h+1);
+		} else {
+			STAT_INC_WASTED_ITERS;
 		}
+		STAT_INC_ITERS;
 		x += c[i];
 	}
 
