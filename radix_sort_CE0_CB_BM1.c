@@ -1,4 +1,8 @@
-// TODO: Variant BM0 would eschew bitmap iteration for the prefix sum generation, use only cuse.
+/*
+	Sequential MSD Radix Sort "CE0_CB_BM1"
+
+	Based on "CE0_CB_BM0", but using second bitmap to only loop over buckets with >1 suffix to sort.
+*/
 static const char** radix_sort_CE0_CB_BM1(const char** RESTRICT S, const char** RESTRICT T, size_t n, int h) {
 	uint64_t buse[4] = { 0 };
 	uint64_t cuse[4] = { 0 }; // TODO: Could overwrite buse during prefix sum iteration (after k loop), need to benchmark.
