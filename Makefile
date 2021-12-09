@@ -48,12 +48,12 @@ CXXFLAGS=-std=gnu++17 -fno-rtti $(OPT) $(WARNFLAGS) $(MISCFLAGS)
 
 .PHONY: clean backup
 
-all: sort_ce0
+all: sorter
 
 test: all
-	$(TEST_PREFIX) ./sort_ce0
+	$(TEST_PREFIX) ./sorter
 
-sort_ce0: sort_ce0.c
+sorter: sorter.c
 
 .c.o:
 	$(CC) $(CFLAGS) -c $< -o $@
@@ -62,4 +62,4 @@ backup:
 	tar -cJf ../$(notdir $(CURDIR))-`date +"%Y-%m"`.tar.xz ../$(notdir $(CURDIR))
 
 clean:
-	rm -f sort_ce0 vgcore.* core.* *.gcda
+	rm -f sorter vgcore.* core.* *.gcda
