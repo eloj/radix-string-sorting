@@ -7,6 +7,7 @@
 #include <err.h>
 #include <errno.h>
 #include <ctype.h>
+#include <time.h>
 #include <sys/mman.h>
 
 #ifndef RESTRICT
@@ -53,6 +54,18 @@ struct radix_sorter_t {
 		.func = radix_sort_CE0_CB_BM1
 	},
 };
+
+static struct timespec timespec_diff(const struct timespec start, const struct timespec stop) {
+	struct timespec res;
+	if ((stop.tv_nsec - start.tv_nsec) < 0) {
+		res.tv_sec = stop.tv_sec - start.tv_sec - 1;
+		res.tv_nsec = 1e9 + stop.tv_nsec - start.tv_nsec; // NSEC_PER_SEC
+	} else {
+		res.tv_sec = stop.tv_sec - start.tv_sec;
+		res.tv_nsec = stop.tv_nsec - start.tv_nsec;
+	}
+	return res;
+}
 
 static int map_file(const char *filename, void **data, size_t *size) {
 	printf("mmap'ing '%s'\n", filename);
@@ -147,7 +160,12 @@ int main(int argc, char *argv[]) {
 
 	const char** aux = malloc(entries * sizeof(const char*));
 
+	struct timespec tp_start;
+	struct timespec tp_end;
+
+	clock_gettime(CLOCK_MONOTONIC_RAW, &tp_start);
 	const char **res = radix_sorter(src, aux, entries, 0);
+	clock_gettime(CLOCK_MONOTONIC_RAW, &tp_end);
 
 #if STATS
 	int used = 0;
@@ -185,6 +203,10 @@ int main(int argc, char *argv[]) {
 		printf("Sort FAILED.\n");
 	}
 #endif
+
+	struct timespec tp_res = timespec_diff(tp_start, tp_end);
+	double time_ms = (tp_res.tv_sec * 1000) + (tp_res.tv_nsec / 1.0e6f);
+	printf("Sorted %zu entries in %.4f ms\n", entries, time_ms);
 
 	free(aux);
 	free(src);
