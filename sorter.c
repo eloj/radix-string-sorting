@@ -35,6 +35,7 @@ static size_t bucket_use[256] = { 0 };
 
 #include "radix_sort_CE0.c"
 #include "radix_sort_CE0_CB.c"
+#include "radix_sort_CE0_CB_BM0.c"
 #include "radix_sort_CE0_CB_BM1.c"
 
 struct radix_sorter_t {
@@ -48,6 +49,10 @@ struct radix_sorter_t {
 	{
 		.name = "MSD Radix Sort variant CE0_CB",
 		.func = radix_sort_CE0_CB
+	},
+	{
+		.name = "MSD Radix Sort variant CE0_CB_BM0",
+		.func = radix_sort_CE0_CB_BM0
 	},
 	{
 		.name = "MSD Radix Sort variant CE0_CB_BM1",
