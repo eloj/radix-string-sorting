@@ -53,7 +53,8 @@ all: sorter
 test: all
 	$(TEST_PREFIX) ./sorter
 
-sorter: sorter.c
+sorter: sorter.c radix_sort_*.c
+	$(CC) $(CFLAGS) $< -o $@
 
 .c.o:
 	$(CC) $(CFLAGS) -c $< -o $@
