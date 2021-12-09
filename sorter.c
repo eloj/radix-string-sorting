@@ -33,6 +33,7 @@ static size_t iters = 0;
 static size_t wasted_iters = 0;
 static size_t bucket_use[256] = { 0 };
 
+#include "qsort_ref.c"
 #include "radix_sort_CE0.c"
 #include "radix_sort_CE1.c"
 #include "radix_sort_CE0_CB.c"
@@ -43,6 +44,10 @@ struct radix_sorter_t {
 	const char *name;
 	radix_sorter_fp func;
 } radix_sorters[] = {
+	{
+		.name = "stdlibc qsort() reference",
+		.func = qsort_ref
+	},
 	{
 		.name = "MSD Radix Sort variant CE0",
 		.func = radix_sort_CE0
@@ -213,7 +218,7 @@ int main(int argc, char *argv[]) {
 			break;
 	}
 
-	// TODO: Verify pointer output is permuation of pointer input.
+	// TODO: Verify pointer output is permutation of pointer input.
 	int ok = 1;
 	for (size_t i=1 ; i < entries ; ++i) {
 		if (strcmp(res[i-1], res[i]) > 0) {
