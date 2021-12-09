@@ -34,6 +34,7 @@ static size_t wasted_iters = 0;
 static size_t bucket_use[256] = { 0 };
 
 #include "radix_sort_CE0.c"
+#include "radix_sort_CE1.c"
 #include "radix_sort_CE0_CB.c"
 #include "radix_sort_CE0_CB_BM0.c"
 #include "radix_sort_CE0_CB_BM1.c"
@@ -45,6 +46,10 @@ struct radix_sorter_t {
 	{
 		.name = "MSD Radix Sort variant CE0",
 		.func = radix_sort_CE0
+	},
+	{
+		.name = "MSD Radix Sort variant CE1",
+		.func = radix_sort_CE1
 	},
 	{
 		.name = "MSD Radix Sort variant CE0_CB",
