@@ -33,11 +33,11 @@ static const char** radix_sort_CE0_CB(const char** RESTRICT S, const char** REST
 	for (size_t i = 1 ; i < 256 ; ++i) {
 		size_t ci = cb[i] - cb[i-1];
 		if (ci > 1) {
-			STAT_INC_BUCKET(i);
 			radix_sort_CE0_CB(S+x, T, ci, h+1);
 		} else {
 			STAT_INC_WASTED_ITERS;
 		}
+		STAT_INC_BUCKET(ci, i);
 		STAT_INC_ITERS;
 		x += ci;
 	}

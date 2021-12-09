@@ -20,12 +20,12 @@ typedef const char** (*radix_sorter_fp)(const char** RESTRICT, const char** REST
 #define STAT_INC_CALLS ++calls
 #define STAT_INC_ITERS ++iters
 #define STAT_INC_WASTED_ITERS ++wasted_iters
-#define STAT_INC_BUCKET(bucket) ++bucket_use[(bucket)]
+#define STAT_INC_BUCKET(n, bucket) do { if ((n) > 0) ++bucket_use[(bucket)]; } while(0)
 #else
 #define STAT_INC_CALLS
 #define STAT_INC_ITERS
 #define STAT_INC_WASTED_ITERS
-#define STAT_INC_BUCKET(bucket)
+#define STAT_INC_BUCKET(n, bucket)
 #endif
 
 static size_t calls = 0;
@@ -59,6 +59,7 @@ struct radix_sorter_t {
 		.func = radix_sort_CE0_CB_BM1
 	},
 };
+static const size_t NUM_VARIANTS = sizeof(radix_sorters)/sizeof(radix_sorters[0]);
 
 static struct timespec timespec_diff(const struct timespec start, const struct timespec stop) {
 	struct timespec res;
@@ -128,15 +129,29 @@ static size_t generate_string_ptrs(char *data, size_t len, const char ***arr) {
 	return entries;
 }
 
-int main(int argc, char *argv[]) {
-	const size_t NUM_VARIANTS = sizeof(radix_sorters)/sizeof(radix_sorters[0]);
+static void usage(const char *argv) {
+	printf("%s <filename> [<variant-id>]\n\n", argv);
 
-	const char *filename = argc > 1 ? argv[1] : "../test-shuffled.txt";
+	printf("Available variants:\n");
+	for (size_t i = 0 ; i < NUM_VARIANTS ; ++i) {
+		struct radix_sorter_t *r = &radix_sorters[i];
+		printf("\t%zu\t\t%s\n", i, r->name);
+	}
+}
+
+int main(int argc, char *argv[]) {
+	const char *filename = argc > 1 ? argv[1] : "test.txt";
 	int variant = argc > 2 ? atoi(argv[2]) : (int)(NUM_VARIANTS-1);
 
 	if (variant >= (int)NUM_VARIANTS) {
-		printf("Invalid variant selected (0-%zu)\n", NUM_VARIANTS-1);
-		return 1;
+		usage(argv[0]);
+		printf("ERROR: Invalid variant '%d' selected. Valid range is 0-%zu\n", variant, NUM_VARIANTS-1);
+		exit(0);
+	}
+
+	if (argc > 1 && ((strcmp(argv[1], "-h") == 0) || (strcmp(argv[1], "--help") == 0))) {
+		usage(argv[0]);
+		exit(0);
 	}
 
 	printf("Selected variant %d: %s\n", variant, radix_sorters[variant].name);

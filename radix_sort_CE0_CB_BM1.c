@@ -59,8 +59,6 @@ static const char** radix_sort_CE0_CB_BM1(const char** RESTRICT S, const char** 
 
 			assert(i > 0);
 			assert(cb[i] >= x);
-			STAT_INC_ITERS;
-			STAT_INC_BUCKET(i);
 
 			// The count needs to be adjusted by 1 for every one-suffix iteration we've skipped over.
 			x += bones[i];
@@ -69,6 +67,9 @@ static const char** radix_sort_CE0_CB_BM1(const char** RESTRICT S, const char** 
 			assert(ci > 1);
 			radix_sort_CE0_CB_BM1(S+x, T, ci, h+1);
 			x = cb[i];
+
+			STAT_INC_ITERS;
+			STAT_INC_BUCKET(ci, i);
 
 			bitset ^= bitset & -bitset;
 		}

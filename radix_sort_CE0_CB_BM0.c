@@ -46,12 +46,12 @@ static const char** radix_sort_CE0_CB_BM0(const char** RESTRICT S, const char** 
 
 			size_t ci = (cb[i] - x);
 			if (ci > 1) {
-				STAT_INC_BUCKET(i);
 				radix_sort_CE0_CB_BM0(S+x, T, ci, h+1);
 			} else {
 				STAT_INC_WASTED_ITERS;
 				++x;
 			}
+			STAT_INC_BUCKET(ci, i);
 			STAT_INC_ITERS;
 			x = cb[i];
 
