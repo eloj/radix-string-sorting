@@ -27,8 +27,8 @@ static const char** radix_sort_CE0(const char** RESTRICT S, const char** RESTRIC
 	memcpy(S, T, n * sizeof(*S));
 
 	// Recursively sort buckets, skipping the first which contains strings already in order.
-	size_t x = c[0];
 	for (size_t i = 1 ; i < 256 ; ++i) {
+		size_t x = b[i-1];
 		if (c[i] > 1) {
 			radix_sort_CE0(S+x, T+x, c[i], h+1);
 		} else {
@@ -36,7 +36,6 @@ static const char** radix_sort_CE0(const char** RESTRICT S, const char** RESTRIC
 		}
 		STAT_INC_BUCKET(c[i], i);
 		STAT_INC_ITERS;
-		x += c[i];
 	}
 
 	return S;
