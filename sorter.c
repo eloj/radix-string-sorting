@@ -211,17 +211,13 @@ int main(int argc, char *argv[]) {
 #endif
 
 #if VERIFY
-	for (size_t i = 0 ; i < entries ; ++i) {
-		if (i < 10)
-			printf("%s\n", res[i]);
-		else
-			break;
-	}
-
 	// TODO: Verify pointer output is permutation of pointer input.
 	int ok = 1;
-	for (size_t i=1 ; i < entries ; ++i) {
-		if (strcmp(res[i-1], res[i]) > 0) {
+	for (size_t i=1 ; i < entries - 1 ; ++i) {
+		if (i < 10) {
+			printf("%s\n", res[i-1]);
+		}
+		if ((strcmp(res[i-1], res[i]) > 0)) {
 			printf("ERROR: res[%zu]='%s' > res[%zu]='%s'\n", i-1, res[i-1], i, res[i]);
 			ok = 0;
 			break;
